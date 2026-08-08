@@ -1,0 +1,95 @@
+// Prisma schema for Jurnal Kafe Bandung
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SeatingType {
+  INDOOR
+  OUTDOOR
+  SEMI_OUTDOOR
+}
+
+enum AmbienceTag {
+  CLASSIC_ELEGANT
+  CASUAL_RELAXED
+  WORK_FRIENDLY
+  LIVELY_HANGOUT
+  INSTAGRAMABLE
+  SPECIALTY_COFFEE
+}
+
+enum PowerOutlet {
+  ADA
+  TERBATAS
+  TIDAK_ADA
+}
+
+enum WfcRating {
+  YA
+  LUMAYAN
+  TIDAK
+}
+
+enum AccessLevel {
+  MUDAH
+  SEDANG
+  SUSAH
+}
+
+// Kept separate from any "shared access" concept on purpose: today the app
+// is gated by a single shared access code (see AccessSession), but Cafe rows
+// already carry an optional pointer to a real author so a future upgrade to
+// individual accounts doesn't require reshaping this table.
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  cafes     Cafe[]
+}
+
+model Cafe {
+  id             String        @id @default(cuid())
+  name           String
+  rating         Int
+  mapsUrl        String?
+  visitDate      DateTime
+  seating        SeatingType[]
+  menuNotes      String?
+  ambienceTags   AmbienceTag[]
+  ambienceNotes  String?
+  powerOutlet    PowerOutlet   @default(TIDAK_ADA)
+  wfcRating      WfcRating     @default(TIDAK)
+  accessLevel    AccessLevel   @default(SEDANG)
+  accessNotes    String?
+  additionalNotes String?
+
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id])
+
+  photos    Photo[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([visitDate])
+  @@index([name])
+}
+
+model Photo {
+  id        String   @id @default(cuid())
+  cafeId    String
+  cafe      Cafe     @relation(fields: [cafeId], references: [id], onDelete: Cascade)
+  url       String
+  pathname  String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([cafeId])
+}
